@@ -1,5 +1,6 @@
 class Map{
   render(){
+    rect()
     rect(500, 200 , 1000, 200)
 
   }
