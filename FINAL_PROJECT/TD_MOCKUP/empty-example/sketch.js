@@ -1,15 +1,9 @@
-class mapRect{
-  constructor(x,y,w,h ){
-    this.x = x;
-    this.y = y;
-    this.w = w
-    this.h = h
-    this.next;
-  }
-
-  render(){
-
-    rect(this.x, this.y , this.w, this.h)
+// Class for map object
+class Map{
+  constructor(path){
+    this.path = path
+    this.wayPoints = []
+    this.placements = []
   }
 }
 
@@ -18,11 +12,12 @@ class Defender{
   constructor(x, y){
     this.x = x;
     this.y = y;
-    this.width = 100;
+    this.width = 50;
     this.place = false
     this.health = 1000;
     this.attack = Math.floor(Math.random()*10)
     this.dead = false
+    this.shape;
   }
   show(){
     fill("blue")
@@ -44,20 +39,34 @@ class Attacker{
   constructor(x,y){
     this.x = x;
     this.y = y;
-    this.width = 100;
-    this.dx = 100;
+    this.width = 50;
     this.dx = 0.5;
+    this.dy = 0.5;
+    this.dir = "down"
     this.health = 750;
     this.attack = Math.floor(Math.random()*10);
     this.dead = false;
     this.mode  = "passive";
   }
-  // method to move attacker
+  // method to move attacker based on map waypoints
   move(){
+    if(this.dir == "down"){
+      this.y += this.dy
+    }
+    if(this.dir == "up"){
+      this.y -= this.dy
+    }
+    if(this.dir == "left"){
       this.x -= this.dx;
+    }
+    if(this.dir == "right"){
+      this.x += this.dy
+    }
+      
   }
   stop(){
     this.x = this.x;
+    this.y = this.y;
   }
   // method to draw attack on canvas
   show(){
@@ -77,14 +86,10 @@ class Attacker{
     }
   }
   // collision check
-  collided(defender){
-    if(defender){
-      if(Math.round(this.x - this.width)  - Math.round(defender.x + defender.width) > -1 && Math.round(this.x - this.width/2)  - Math.round(defender.x - defender.width/2) < 1 ){
+  collided(entityX, entityY){
+    var distance = dist(this.x, this.y, entityX, entityY)
+      if(distance > 0 && distance < 10){
         return true
-    }
-    else{
-      return false
-    }
     }
     return false
   }
@@ -93,23 +98,31 @@ class Attacker{
 function setup() {
 
   createCanvas(1000,600);
-  // towersize = 100
   rectMode(CENTER);
   ellipseMode(CENTER);
-  // tower = new Tower()
-  // attacker = new Attacker(500,200)
+
+  // map object with waypoints for attacker navigation
+  mapOb = new Map("assets/background.png")
+  backgroundMap = loadImage(mapOb.path)
+  mapOb.wayPoints.push([900, 120, "down"],[900, 400, "left"], [430, 400, "up"],[430, 200, "left"],[180, 200, "down"], [180, 500])
+  
+  // arrays for towers and attackers
   towers = []
   attackers = []
-  // towers.push(new Defender(100,200))
-  attackers.push(new Attacker(500,200))
-  map = new Map()
+  attackers.push(new Attacker(mapOb.wayPoints[0][0],mapOb.wayPoints[0][1]))
 
 }
 
 function draw() {
   
-  background(255,217,25);  
-  fill("gray")
+  image(backgroundMap, 0, 0)
+  ellipse(900, 120, 20, 20)
+  ellipse(900, 400, 20, 20)
+  ellipse(430, 400, 20, 20)
+  ellipse(430, 200, 20, 20)
+  ellipse(180, 200, 20, 20)
+  ellipse(180, 500, 20, 20)
+
   for(i = 0; i < attackers.length; i++){
 
     if(!attackers[i].dead){
@@ -121,7 +134,7 @@ function draw() {
         attackers[i].stop()
       }
       for(j = 0; j < towers.length; j++){
-        if(attackers[i].collided(towers[j])){
+        if(attackers[i].collided(towers[j].x, towers[j].y)){
           attackers[i].mode = "aggresive"
           attackers[i].damaged(towers[j].attack)
           towers[j].damaged(attackers[i].attack)
@@ -131,7 +144,14 @@ function draw() {
           }
         }
       }
+      for(k = 0; k< mapOb.wayPoints.length; k++){
+        if(attackers[i].collided(mapOb.wayPoints[k][0], mapOb.wayPoints[k][1])){
+          attackers[i].dir = mapOb.wayPoints[k][2]
+          console.log(attackers[i].dir)
+        }
+      }
     }
+
     else{
       attackers.splice(i)
     }
@@ -152,6 +172,7 @@ function draw() {
 
 
 function mousePressed(){
+
   towers.push(new Defender(mouseX, mouseY))
   // for(i = 0; i < towers.length; i++){
   //   towers[i].x = mouseX
