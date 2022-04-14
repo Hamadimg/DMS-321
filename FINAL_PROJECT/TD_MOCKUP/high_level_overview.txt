@@ -1,0 +1,43 @@
+objects
+    attackers
+        damage
+        health
+        speed
+        abilities
+        cooldown
+    map
+        path
+        place locations
+
+    game
+        ui
+        states
+        timer
+
+    towers
+        damage
+        children
+        health
+        cooldown
+
+
+Pages (states)
+    Lobby
+    waiting matchup
+    game start
+    mid-game
+    new round
+    end game
+
+Lobby
+    "welcome to tdo, click to join a Lobby"
+
+Waiting matchup
+    "matching up..." "Join game?
+
+game start
+
+
+
+
+

@@ -1,8 +1,15 @@
-class Map{
-  render(){
-    rect()
-    rect(500, 200 , 1000, 200)
+class mapRect{
+  constructor(x,y,w,h ){
+    this.x = x;
+    this.y = y;
+    this.w = w
+    this.h = h
+    this.next;
+  }
 
+  render(){
+
+    rect(this.x, this.y , this.w, this.h)
   }
 }
 
@@ -41,28 +48,28 @@ class Attacker{
     this.dx = 100;
     this.dx = 0.5;
     this.health = 750;
-    this.attack = Math.floor(Math.random()*10)
-    this.dead = false
-    this.mode  = "passive"
+    this.attack = Math.floor(Math.random()*10);
+    this.dead = false;
+    this.mode  = "passive";
   }
   // method to move attacker
   move(){
-      this.x -= this.dx
+      this.x -= this.dx;
   }
   stop(){
-    this.x = this.x
+    this.x = this.x;
   }
   // method to draw attack on canvas
   show(){
     fill("red");
     circle(this.x, this.y, this.width);
     fill(0, 102, 153);
-    text(`${this.health}`, this.x -10, this.y - 55)
+    text(`${this.health}`, this.x -10, this.y - 55);
   }
   // method to take damage
   damaged(amount){
     if(this.health <= 0){
-      this.dead = true
+      this.dead = true;
     }
     else{
       this.health -= amount
@@ -72,7 +79,7 @@ class Attacker{
   // collision check
   collided(defender){
     if(defender){
-      if(Math.round(this.x - this.width/2)  == Math.round(defender.x + defender.width/2)){
+      if(Math.round(this.x - this.width)  - Math.round(defender.x + defender.width) > -1 && Math.round(this.x - this.width/2)  - Math.round(defender.x - defender.width/2) < 1 ){
         return true
     }
     else{
@@ -88,7 +95,7 @@ function setup() {
   createCanvas(1000,600);
   // towersize = 100
   rectMode(CENTER);
-  ellipseMode(CENTER)
+  ellipseMode(CENTER);
   // tower = new Tower()
   // attacker = new Attacker(500,200)
   towers = []
@@ -103,7 +110,6 @@ function draw() {
   
   background(255,217,25);  
   fill("gray")
-  map.render()
   for(i = 0; i < attackers.length; i++){
 
     if(!attackers[i].dead){
@@ -146,7 +152,7 @@ function draw() {
 
 
 function mousePressed(){
-  towers.push(new Defender(mouseX,mouseY))
+  towers.push(new Defender(mouseX, mouseY))
   // for(i = 0; i < towers.length; i++){
   //   towers[i].x = mouseX
   //   towers[i].y = mouseY
