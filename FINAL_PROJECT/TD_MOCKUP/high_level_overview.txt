@@ -1,3 +1,5 @@
+Nouns
+
 objects
     attackers
         damage
@@ -30,12 +32,14 @@ Pages (states)
     end game
 
 Lobby
-    "welcome to tdo, click to join a Lobby"
+    "welcome to do, click to join a Lobby"
 
 Waiting matchup
     "matching up..." "Join game?
 
 game start
+    
+
 
 
 

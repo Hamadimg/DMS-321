@@ -7,17 +7,23 @@ class Map{
   }
 }
 
+class Selector{
+  constructor(){
+
+  }
+}
 // Class for tower object
 class Defender{
-  constructor(x, y){
+  constructor(x, y, w, place){
     this.x = x;
     this.y = y;
-    this.width = 50;
-    this.place = false
-    this.health = 1000;
+    this.width = w;
+    this.place = place;
+    this.health = 200;
     this.attack = Math.floor(Math.random()*10)
     this.dead = false
     this.shape;
+    this.children;
   }
   show(){
     fill("blue")
@@ -31,6 +37,13 @@ class Defender{
       this.dead = true
     }
     this.health -= amount
+  }
+  spawnChildren(){
+    setTimeout(console.log("sleeping"), 100000)
+    var yPos = this.y + 100
+    this.children = new Defender(this.x, yPos, 50)
+    this.children.health = 100
+    this.children.show()
   }
 
 }
@@ -86,9 +99,9 @@ class Attacker{
     }
   }
   // collision check
-  collided(entityX, entityY){
+  collided(entityX, entityY, entityW){
     var distance = dist(this.x, this.y, entityX, entityY)
-      if(distance > 0 && distance < 10){
+      if(distance > 0 && distance < entityW){
         return true
     }
     return false
@@ -105,6 +118,7 @@ function setup() {
   mapOb = new Map("assets/background.png")
   backgroundMap = loadImage(mapOb.path)
   mapOb.wayPoints.push([900, 120, "down"],[900, 400, "left"], [430, 400, "up"],[430, 200, "left"],[180, 200, "down"], [180, 500])
+  mapOb.placements.push([760, 275, "free"], [555, 275, "free"])
   
   // arrays for towers and attackers
   towers = []
@@ -123,6 +137,9 @@ function draw() {
   ellipse(180, 200, 20, 20)
   ellipse(180, 500, 20, 20)
 
+  ellipse(760, 275, 20, 20)
+  ellipse(555, 275, 20, 20)
+
   for(i = 0; i < attackers.length; i++){
 
     if(!attackers[i].dead){
@@ -134,20 +151,24 @@ function draw() {
         attackers[i].stop()
       }
       for(j = 0; j < towers.length; j++){
-        if(attackers[i].collided(towers[j].x, towers[j].y)){
-          attackers[i].mode = "aggresive"
-          attackers[i].damaged(towers[j].attack)
-          towers[j].damaged(attackers[i].attack)
-          console.log(attackers[i].mode)
-          if(towers[j].dead == true){
-            attackers[i].mode = "passive"
+        if(towers[j].children){
+          console.log(towers[j].children.x, towers[j].children.y)
+          if(attackers[i].collided(towers[j].children.x, towers[j].children.y, 50)){
+            console.log("collided")
+            attackers[i].mode = "aggresive"
+            attackers[i].damaged(towers[j].children.attack)
+            towers[j].children.damaged(attackers[i].attack)
+            if(towers[j].dead == true){
+              attackers[i].mode = "passive"
+            }
           }
         }
+
       }
       for(k = 0; k< mapOb.wayPoints.length; k++){
-        if(attackers[i].collided(mapOb.wayPoints[k][0], mapOb.wayPoints[k][1])){
+        if(attackers[i].collided(mapOb.wayPoints[k][0], mapOb.wayPoints[k][1], 10)){
           attackers[i].dir = mapOb.wayPoints[k][2]
-          console.log(attackers[i].dir)
+          console.log(i, k)
         }
       }
     }
@@ -162,6 +183,7 @@ function draw() {
 
     if(!towers[i].dead){
       towers[i].show()
+
     }
     else{
       towers.splice(i)
@@ -172,8 +194,17 @@ function draw() {
 
 
 function mousePressed(){
+  for(i = 0; i< mapOb.placements.length; i++){
+    d = dist(mouseX, mouseY, mapOb.placements[i][0], mapOb.placements[i][1])
+    if(d < 20 && mapOb.placements[i][2] == "free" ){
+      towers.push(new Defender(mapOb.placements[i][0], mapOb.placements[i][1], 100, i))
+      console.log("ploted")
+      mapOb.placements[i][2] = "full"
+    }
+    
 
-  towers.push(new Defender(mouseX, mouseY))
+  }
+
   // for(i = 0; i < towers.length; i++){
   //   towers[i].x = mouseX
   //   towers[i].y = mouseY
