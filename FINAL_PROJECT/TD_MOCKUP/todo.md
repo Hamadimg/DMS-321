@@ -8,7 +8,7 @@
 - [ ] finish describing objects of the game
 - [ ] write high level mechanics of the game
 - [ ] get sprites on github
-- [ ] make moqups of start all pages (scenes)
+- [ ] make moqups of all pages
 
 ## Coding
 
