@@ -14,7 +14,7 @@
 
 ------------
 
-- [ ] write pseudocode of mechanics
+- [ ] Write pseudocode of mechanics
 - [ ] Figure out how to deploy defenders
 - [ ] Figure out timer for deployment
 - [ ] Figure out how multiplayer works
