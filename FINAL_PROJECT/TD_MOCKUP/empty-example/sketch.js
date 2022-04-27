@@ -108,15 +108,22 @@ class Attacker{
   }
 
 }
+
+canvasWidth = 800;
+canvasHeight = 450;
+
+function preload() {
+  mapOb = new Map("assets\\main_background.png")
+  backgroundMap = loadImage(mapOb.path)
+}
+
 function setup() {
 
-  createCanvas(1000,600);
+  createCanvas(canvasWidth,canvasHeight);
   rectMode(CENTER);
   ellipseMode(CENTER);
 
   // map object with waypoints for attacker navigation
-  mapOb = new Map("assets/background.png")
-  backgroundMap = loadImage(mapOb.path)
   mapOb.wayPoints.push([900, 120, "down"],[900, 400, "left"], [430, 400, "up"],[430, 200, "left"],[180, 200, "down"], [180, 500])
   mapOb.placements.push([760, 275, "free"], [555, 275, "free"])
   
@@ -128,8 +135,9 @@ function setup() {
 }
 
 function draw() {
-  
-  image(backgroundMap, 0, 0)
+
+  image(backgroundMap, 0, 0 , canvasWidth, canvasHeight)
+
   ellipse(900, 120, 20, 20)
   ellipse(900, 400, 20, 20)
   ellipse(430, 400, 20, 20)
@@ -199,6 +207,7 @@ function mousePressed(){
     if(d < 20 && mapOb.placements[i][2] == "free" ){
       towers.push(new Defender(mapOb.placements[i][0], mapOb.placements[i][1], 100, i))
       console.log("ploted")
+      
       mapOb.placements[i][2] = "full"
     }
     
