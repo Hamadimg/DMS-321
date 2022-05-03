@@ -1,0 +1,43 @@
+class attacker
+    traits
+        type
+            army
+            tower attacker
+            ufo
+        image/sprites
+        Attack speed
+        spawn cooldown
+        movement speed
+        health
+    actions
+        Attack
+        spawn
+        render
+        wait
+        
+
+defender attacker
+    traits
+        type
+            tower defender 
+            mortar strike
+        image/sprites
+        attack speed
+        cooldown
+        health
+    actions
+        Attack
+        spawn
+        place down
+        wait
+
+
+tower select
+    images
+    cooldowns
+    
+game
+    actions
+        start game
+        end game
+
