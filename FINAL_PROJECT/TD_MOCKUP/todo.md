@@ -14,8 +14,16 @@
 
 ------------
 
-- [ ] Write pseudocode of mechanics
+- [x] Write pseudocode of mechanics
+- [x] Figure out timer for deployment
+- [x] create timer
+- [ ] create tower selection 
+- [ ] create working tower health bar
+- [ ] create funtion to spawn aliens
 - [ ] Figure out how to deploy defenders
-- [ ] Figure out timer for deployment
+- [ ] have working soldier spawns  ( with shapes for now)
+- [ ] have working defender spawns (with shapes)
+- [ ] replace shapes with sprites
 - [ ] Figure out how multiplayer works
+- [ ] Create multiplay version of game
 
