@@ -1,9 +1,9 @@
 // Class for map object
 class Map{
-  constructor(imagePath){
-    this.imagePath = imagePath
-    this.wayPoints = []
-    this.placements = []
+  constructor(){
+    this.wayPoints = [[[700, 0, "down"],[700, 290, "left"], [305, 280, "up"],[320, 90, "left"],[115, 95, "down"]], 
+    [[115, 380, "up"], [115, 95, "right"], [310, 95, "down"],[310 , 290, "right"],[700, 290, "up"],[700, 0, "up"]]]
+    this.placements = [[760, 155, "free", "left"], [568, 225, "free", "down"], [370, 225, "free", "down"], [203, 35, "free", "down"], [205, 200, "free", "right"], [40, 136, "free", "right"], [40, 273, "free", "right"]]
   }
 }
 
@@ -18,6 +18,7 @@ class DefenderTower{
     this.x
     this.y
     this.health = 100;
+
       // method to take damage
 
   }
@@ -48,7 +49,7 @@ class Defender{
     fill("blue")
     rect(this.x, this.y, this.width, this.width)
     fill(0, 102, 153);
-    text(`${this.health}`, (this.x - this.width /2 ), this.y - 30)
+    text(`${Math.floor(this.health)}`, (this.x - this.width /2 ), this.y - 30)
   }
 
   damaged(amount){
@@ -69,18 +70,28 @@ class Defender{
 }
 // Class for Attacker object
 class Attacker{
-  constructor(x,y){
+  constructor(x,y, type){
     this.x = x;
     this.y = y;
     this.width = 20;
-    // this.height = 50;
+    this.type = type;
     this.dx = 5;
     this.dy = 5;
-    this.dir = "down"
     this.health = 12;
-    this.attack = 0.10;
+    this.coolDown = 100;
+    if(this.type == "alien"){
+      this.attack = 0.50;
+      this.dir ="down"
+    }
+    else{
+      this.attack = 0.010
+      this.dir = "up"
+    }
+
+
     this.dead = false;
     this.mode  = "passive";
+
   }
   // method to move attacker based on map waypoints
   move(){
@@ -104,11 +115,20 @@ class Attacker{
   }
   // method to draw attack on canvas
   show(){
-    fill("red")
-    ellipse(this.x, this.y, this.width)
-    // image(this.image,this.x - this.width/2 , this.y -this.height/2, this.width, this.height )
-    fill(0, 102, 153);
-    text(`${this.health}`, this.x - 10, this.y - 15);
+    if(this.type == "alien"){
+      fill("red")
+      ellipse(this.x, this.y, this.width)
+      // image(this.image,this.x - this.width/2 , this.y -this.height/2, this.width, this.height )
+      fill(0, 102, 153);
+      text(`${Math.ceil(this.health)}`, this.x - 10, this.y - 15);
+    }
+    else{
+      fill("blue")
+      rect(this.x, this.y, this.width, this.width)
+      fill(0, 102, 153);
+      text(`${Math.ceil(this.health)}`, this.x - 10, this.y - 15);
+    }
+
   }
   // method to take damage
   damaged(amount){
@@ -121,10 +141,10 @@ class Attacker{
   }
   // collision check
   collided(entityX, entityY, entityW){
-    var distance = dist(this.x, this.y, entityX, entityY)
-      if(distance > 0 && distance < entityW){
-        return true
-    }
+    var distance = dist(this.x, this.y,entityX, entityY)
+    if(distance <=  this.width/2 + entityW/2){
+      return true
+  }
     return false
   }
 
@@ -149,13 +169,15 @@ var gameTime = 0
 var font, fontSize = 20;
 gameState = "wait"
 var attackerInterval;
+var damageInterval;
 var defenderInterval;
 var timerInterval;
+var soldierCoolDown = false
+var soldierCoolDownTimer = 500
 
 function preload() {
   // preload all images and sound for game
-  mapOb = new Map("assets/tdo_background.png")
-  backgroundMap = loadImage(mapOb.imagePath)
+  backgroundMap = loadImage("assets/tdo_background.png")
   soundFormats("m4a", "wav", "mp3");
   music = loadSound("sounds/Menu Music.mp3");
   menu = loadImage("assets/TDO Menu Screen Moqup.jpg");
@@ -175,16 +197,20 @@ function setup() {
   ellipseMode(CENTER);
   textFont(font);
   textSize(fontSize);
+  mapOb = new Map()
 
   // map object with waypoints for attacker navigation
-  mapOb.wayPoints.push([700, 0, "down"],[700, 290, "left"], [310, 280, "up"],[310, 90, "left"],[115, 95, "down"])
+  // mapOb.wayPoints.push([700, 0, ["down", "up"]],[700, 290, ["left", "up"]], [310, 280, ["up","right"]],[310, 90, ["left","down"]],[115, 95, ["down","right"]], [115, 400, ["down","up"]])
   // coordinates for tower placements and direction of spawning children
-  mapOb.placements.push([760, 155, "free", "left"], [568, 225, "free", "down"], [370, 225, "free", "down"], [203, 35, "free", "down"], [205, 200, "free", "right"], [40, 136, "free", "right"], [40, 273, "free", "right"])
+  // mapOb.placements.push([760, 155, "free", "left"], [568, 225, "free", "down"], [370, 225, "free", "down"], [203, 35, "free", "down"], [205, 200, "free", "right"], [40, 136, "free", "right"], [40, 273, "free", "right"])
   towerOb= new DefenderTower()
   towerOb.x = 115, towerOb.y = 380
   // arrays for towers and attackers
   towers = []
   attackers = []
+  soldiers = []
+
+
   
 
 }
@@ -198,17 +224,18 @@ function draw() {
   // Highlight buttons 
   if (scene == 0) {
     background(menu);
-    if (mouseX > 290 && mouseX < 503 && mouseY > 151 && mouseY < 192) {
+    if (mouseX > 290 && mouseX < 503 && mouseY > 151 && mouseY < 192 ) {
       cursor(HAND);
-    }
+    }else{cursor(ARROW)}
 
-    else if (mouseX > 293 && mouseX < 507 && mouseY > 227 && mouseY < 268) {
+    if (mouseX > 293 && mouseX < 507 && mouseY > 227 && mouseY < 268) {
       cursor(HAND);
-    }
+    }else{cursor(ARROW)}
 
-    else if (mouseX > 291 && mouseX < 507 && mouseY > 306 && mouseY < 346) {
+    if (mouseX > 291 && mouseX < 507 && mouseY > 306 && mouseY < 346) {
       cursor(HAND);
-    }
+    }else{cursor(ARROW)}
+
   }
 
   else if (scene == 1) {
@@ -239,6 +266,7 @@ function draw() {
   // Game Scene
   else if (scene == 4) {
 
+
     if(gameState == "stop"){
       reSetup()
     }
@@ -246,6 +274,7 @@ function draw() {
 
 
     background(backgroundMap)
+
     currentTime = new Date(gameTime * 1000).toISOString().substr(14, 5)
     rect(80, 30, 130, 30)
     text("Timer:", 20, 35)
@@ -253,9 +282,13 @@ function draw() {
 
     if(gameState == "wait")
     {
+
       text("START", 450, 420)
     }
     // Tower health HUD
+    for(i=0; i<mapOb.wayPoints[0].length; i++){
+      ellipse(mapOb.wayPoints[1][i][0], mapOb.wayPoints[1][i][1], 1)
+    }
     rect(360, 385, 110, 20)
     fill("red")
     textSize(12)
@@ -289,7 +322,7 @@ function draw() {
     rect(675, 400, 40, 50)
     rect(725, 400, 40, 50)
     // highlight selection
-    if(mouseX > 555 && mouseX < 593 && mouseY > 376 && mouseY < 425){
+    if(mouseX > 555 && mouseX < 593 && mouseY > 376 && mouseY < 425 && !soldierCoolDown){
       fill("yellow")
       rect(575, 400, 40, 50)
       cursor(HAND)
@@ -323,26 +356,17 @@ function draw() {
     triangle(663, 410, 690, 410, 675, 386)
 
 
-    // 
-
-    // // turn points
-    // text("1",700, 10)
-    // text("2", 700, 290)
-    // text("3", 310, 280)
-    // text("4", 300, 90)
-    // ellipse(115, 95, 10, 10)
-    // ellipse(100, 400, 10, 10)
-    // // place areas
-    // text("x1",760, 155)
-    // text("x2", 568, 225)
-    // text("x3", 370, 225)
-    // text("x4", 203, 35)
-    // text("x5", 205, 200)
-    // text("x6", 40, 136)
-    // text("x7", 40, 273)
-    // defnder tower location
 
     if(gameState == "play"){
+      if(soldierCoolDown == true){
+        fill(25, 200)
+        rect(575, 400, 40, 50)
+        soldierCoolDownTimer--
+        if(soldierCoolDownTimer == 0){
+          soldierCoolDown = false
+        }
+      }
+      
       for(i = 0; i < attackers.length; i++){
         // call methods for living attackers
         if(!attackers[i].dead){
@@ -353,11 +377,25 @@ function draw() {
           else{
             attackers[i].stop()
           }
-          if(attackers[i].collided(towerOb.x, towerOb.y, 10)){
-            console.log("collided")
-            console.log(towerOb.health)
+          if(attackers[i].collided(towerOb.x, towerOb.y, 25, "tower")){
                 attackers[i].mode = "aggresive"
                 towerOb.damaged(attackers[i].attack)
+          }
+
+          for(j=0; j<soldiers.length; j++){
+            if(attackers[i].collided(soldiers[j].x, soldiers[j].y, soldiers[j].width, 0)){
+              console.log("collided")
+              attackers[i].mode = "aggresive"
+              soldiers[j].damaged(attackers[j].attack)
+
+              // if(attackers[j].dead == true || !attackers[j]){
+              //   soldiers[i].mode = "passive"
+              // }
+              if(soldiers[j].dead == true){
+                attackers[i].mode = "passive"
+              }
+            }
+
           }
           // check collision with defending towers
           for(j = 0; j < towers.length; j++){
@@ -377,15 +415,57 @@ function draw() {
     
           }
           // navigate attacker utilizing map turn points
-          for(k = 0; k< mapOb.wayPoints.length; k++){
-            if(attackers[i].collided(mapOb.wayPoints[k][0], mapOb.wayPoints[k][1], 10)){
-              attackers[i].dir = mapOb.wayPoints[k][2]
+          for(k = 0; k < mapOb.wayPoints[0].length; k++){
+            if(attackers[i].collided(mapOb.wayPoints[0][k][0], mapOb.wayPoints[0][k][1], 10)){
+              // console.log("collided")
+              attackers[i].dir = mapOb.wayPoints[0][k][2]
             }
           }
         }
         // remove dead attacks from array
         else{
-          attackers.splice(i)
+          attackers.splice(i,1)
+        }
+    
+      }
+      // logical for soldiers
+      for(i = 0; i < soldiers.length; i++){
+        // call methods for living attackers
+        if(!soldiers[i].dead){
+          soldiers[i].show()
+          if(soldiers[i].mode == "passive"){
+            soldiers[i].move()
+          }
+          else{
+            soldiers[i].stop()
+          }
+          for(j=0; j<attackers.length; j++){
+            if(soldiers[i].collided(attackers[j].x, attackers[j].y, attackers[j].width, 0)){
+              console.log("collided")
+              soldiers[i].mode = "aggresive"
+              // attackers[j].mode = "aggresive"
+              // soldiers[i].damaged(attackers[j].attack)
+              attackers[j].damaged(soldiers[i].attack)
+              if(attackers[j].dead == true){
+                soldiers[i].mode = "passive"
+              }
+              // if(soldiers[i].dead == true || !soldiers[i] ){
+              //   attackers[j].mode = "passive"
+              // }
+            }
+
+          }
+
+          // navigate attacker utilizing map turn points
+          for(k = 0; k< mapOb.wayPoints[1].length; k++){
+            if(soldiers[i].collided(mapOb.wayPoints[1][k][0], mapOb.wayPoints[1][k][1], 0, "turn")){
+              soldiers[i].dir = mapOb.wayPoints[1][k][2]
+            }
+          }
+        }
+        // remove dead soldiers from array
+        else{
+          soldiers.splice(i,1)
         }
     
       }
@@ -402,6 +482,7 @@ function draw() {
         }
     
       }
+
     }
     }
 
@@ -418,7 +499,7 @@ function draw() {
 
 function mousePressed(){
 
-  console.log(mouseX, mouseY)
+  // console.log(mouseX, mouseY)
 
   // scene navigation
   if (scene == 0) {
@@ -426,7 +507,7 @@ function mousePressed(){
       scene = 4;
     }
     else if (mouseX > 293 && mouseX < 507 && mouseY > 227 && mouseY < 268) {
-      scene = 5;
+      console.log("leaderboard not implemented");
     }
     else if (mouseX > 291 && mouseX < 507 && mouseY > 306 && mouseY < 346) {
       scene = 1;
@@ -467,6 +548,33 @@ function mousePressed(){
       
     }
 
+    if(gameState == "play"){
+      // Utilities
+      if(mouseX > 555 && mouseX < 593 && mouseY > 376 && mouseY < 425){
+        if(soldierCoolDown == false){
+          spawnDefender()
+          soldierCoolDownTimer = 500;
+          soldierCoolDown = true;
+        }
+
+      }
+      // else if(mouseX > 604 && mouseX < 644 && mouseY > 376 && mouseY < 425){
+      //   fill("yellow")
+      //   rect(625, 400, 40, 50)
+      //   cursor(HAND)
+      // }
+      // else if(mouseX > 655 && mouseX < 695 && mouseY > 376 && mouseY < 425){
+      //   fill("yellow")
+      //   rect(675, 400, 40, 50)
+      //   cursor(HAND)
+      // }
+      // else if(mouseX > 705 && mouseX < 744 && mouseY > 376 && mouseY < 425){
+      //   fill("yellow")
+      //   rect(725, 400, 40, 50)
+      //   cursor(HAND)
+      // }
+    }
+
     plotDefender()
 
   }
@@ -479,7 +587,7 @@ function startGame(){
     // interval functions for game
     gameState = "play"
     attackerInterval = setInterval(spawnAttacker, 5000);
-    defenderInterval = setInterval(coolDown, 4000);
+    // defenderInterval = setInterval(coolDown, 4000);
     timerInterval = setInterval(updateTimer, 1000);
 
 }
@@ -497,12 +605,10 @@ function plotDefender(){
 
   }
 }
-function coolDown(){
-  for(i = 0; i < towers.length; i++){
-    // towers[i].spawnChildren()
-    // console.log("spawned")
-  }
-}
+
+// function coolDownHandler(time){
+
+// }
 
 function updateTimer(){
 
@@ -510,8 +616,22 @@ function updateTimer(){
 }
 
 function spawnAttacker(){
-  attackers.push(new Attacker(mapOb.wayPoints[0][0],mapOb.wayPoints[0][1], 10))
+  alien = new Attacker(mapOb.wayPoints[0][0][0],mapOb.wayPoints[0][0][1], "alien")
 
+  if(gameTime >= 30){
+    alien.health = 20
+    alien.attack = 0.015
+  }
+  attackers.push(alien)
+}
+
+function doDamage(){
+
+}
+
+function spawnDefender(){
+  soldiers.push(new Attacker(mapOb.wayPoints[1][0][0],mapOb.wayPoints[1][0][1], "soldier"))
+  print("solder Pushed")
 }
 
 function resetGame(){
@@ -522,6 +642,7 @@ function resetGame(){
   mapOb.placements.push([760, 155, "free", "left"], [568, 225, "free", "down"], [370, 225, "free", "down"], [203, 35, "free", "down"], [205, 200, "free", "right"], [40, 136, "free", "right"], [40, 273, "free", "right"])
   towers = [];
   attackers = [];
+  soldiers = [];
   towerOb= new DefenderTower();
   towerOb.x = 115, towerOb.y = 380;
   gameTime = 0;
@@ -533,6 +654,6 @@ function resetGame(){
 
 function reSetup(){
     attackerInterval = setInterval(spawnAttacker, 5000)
-    defenderInterval = setInterval(coolDown, 4000)
+    // defenderInterval = setInterval(coolDown, 4000)
     timerInterval = setInterval(updateTimer, 1000)
 }
