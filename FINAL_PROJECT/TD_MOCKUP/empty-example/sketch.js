@@ -3,7 +3,7 @@ class Map{
   constructor(){
     this.wayPoints = [[[700, 0, "down"],[700, 290, "left"], [305, 280, "up"],[320, 90, "left"],[115, 95, "down"]], 
     [[115, 380, "up"], [115, 95, "right"], [310, 95, "down"],[310 , 290, "right"],[700, 290, "up"],[700, 0, "up"]]]
-    this.placements = [[760, 155, "free", "left"], [568, 225, "free", "down"], [370, 225, "free", "down"], [203, 35, "free", "down"], [205, 200, "free", "right"], [40, 136, "free", "right"], [40, 273, "free", "right"]]
+    this.placements = [[765, 153, "free", "left"], [573, 222, "free", "down"], [378, 222, "free", "down"], [210, 34, "free", "down"], [210, 199, "free", "right"], [45, 136, "free", "right"], [45, 270, "free", "right"]]
   }
 }
 
@@ -17,7 +17,7 @@ class DefenderTower{
   constructor(){
     this.x
     this.y
-    this.health = 100;
+    this.health = 1000;
 
       // method to take damage
 
@@ -39,11 +39,11 @@ class Defender{
     this.y = y;
     this.width = 60;
     this.place = place;
-    this.health = 200;
+    this.health = 1000;
     // this.attack = Math.floor(Math.random()*10)
     this.dead = false
-    // this.shape;
-    this.children;
+    // this.childrenCooldown = false;
+    // this.childrenCooldownTimer = 500;
   }
   show(){
     fill("blue")
@@ -58,14 +58,14 @@ class Defender{
     }
     this.health -= amount
   }
-  spawnChildren(){
-    // setTimeout(console.log("sleeping"), 200)
-    var yPos = this.y + 65
-    this.children = new Defender(this.x, yPos, 50)
-    this.children.health = 100
-    this.children.width = 20
-    this.children.show()
-  }
+  // spawnChildren(){
+  //   // setTimeout(console.log("sleeping"), 200)
+  //   var yPos = this.y + 65
+  //   this.children = new Defender(this.x, yPos, 50)
+  //   this.children.health = 100
+  //   this.children.width = 20
+  //   // this.children.show()
+  // }
 
 }
 // Class for Attacker object
@@ -75,16 +75,16 @@ class Attacker{
     this.y = y;
     this.width = 20;
     this.type = type;
-    this.dx = 5;
-    this.dy = 5;
+    this.dx = 2;
+    this.dy = 2;
     this.health = 12;
     this.coolDown = 100;
     if(this.type == "alien"){
-      this.attack = 0.50;
+      this.attack = Math.random(0.15);
       this.dir ="down"
     }
     else{
-      this.attack = 0.010
+      this.attack = Math.random(0.10);
       this.dir = "up"
     }
 
@@ -123,8 +123,8 @@ class Attacker{
       text(`${Math.ceil(this.health)}`, this.x - 10, this.y - 15);
     }
     else{
-      fill("blue")
-      rect(this.x, this.y, this.width, this.width)
+      fill("green")
+      ellipse(this.x, this.y,this.width)
       fill(0, 102, 153);
       text(`${Math.ceil(this.health)}`, this.x - 10, this.y - 15);
     }
@@ -173,7 +173,15 @@ var damageInterval;
 var defenderInterval;
 var timerInterval;
 var soldierCoolDown = false
-var soldierCoolDownTimer = 500
+var soldierCoolDownTimer = 500;
+var defenderCoolDown = false;
+var defenderCoolDownTimer = 500;
+var canPlace = false;
+// var childrenCooldown = false;
+// var childrenCooldownTimer = 500;
+
+
+
 
 function preload() {
   // preload all images and sound for game
@@ -276,19 +284,25 @@ function draw() {
     background(backgroundMap)
 
     currentTime = new Date(gameTime * 1000).toISOString().substr(14, 5)
+    fill("white")
     rect(80, 30, 130, 30)
+    fill("black")
     text("Timer:", 20, 35)
     text(currentTime, 85, 35);
 
     if(gameState == "wait")
     {
-
+      fill("black")
       text("START", 450, 420)
     }
     // Tower health HUD
     for(i=0; i<mapOb.wayPoints[0].length; i++){
       ellipse(mapOb.wayPoints[1][i][0], mapOb.wayPoints[1][i][1], 1)
     }
+    for(i=0; i<mapOb.placements.length; i++){
+      ellipse(mapOb.placements[i][0], mapOb.placements[i][1], 1)
+    }
+    fill("white")
     rect(360, 385, 110, 20)
     fill("red")
     textSize(12)
@@ -296,7 +310,7 @@ function draw() {
     fill("white")
     rect(370, 410, 130, 20)
     fill("red")
-    barWidth = map(250, 0, 200, 0, towerOb.health)
+    barWidth = map(25, 0, 200, 0, towerOb.health)
     rectMode(CORNER)
     rect(308, 403, barWidth, 15)
     image(defenderTower, 10, 300, 220, 170)
@@ -312,7 +326,8 @@ function draw() {
     strokeWeight(8);
     stroke("white");
     fill("white")
-    rect(650, 400, 200, 60)
+    rect(625, 400, 150, 60)
+
     // selection squares
     stroke("black")
     fill(180)
@@ -320,14 +335,15 @@ function draw() {
     rect(575, 400, 40, 50)
     rect(625, 400, 40, 50)
     rect(675, 400, 40, 50)
-    rect(725, 400, 40, 50)
+    // rect(725, 400, 40, 50)
+
     // highlight selection
-    if(mouseX > 555 && mouseX < 593 && mouseY > 376 && mouseY < 425 && !soldierCoolDown){
+    if(mouseX > 555 && mouseX < 593 && mouseY > 376 && mouseY < 425 && !defenderCoolDown){
       fill("yellow")
       rect(575, 400, 40, 50)
       cursor(HAND)
     }
-    else if(mouseX > 604 && mouseX < 644 && mouseY > 376 && mouseY < 425){
+    else if(mouseX > 604 && mouseX < 644 && mouseY > 376 && mouseY < 425 && !soldierCoolDown){
       fill("yellow")
       rect(625, 400, 40, 50)
       cursor(HAND)
@@ -337,17 +353,17 @@ function draw() {
       rect(675, 400, 40, 50)
       cursor(HAND)
     }
-    else if(mouseX > 705 && mouseX < 744 && mouseY > 376 && mouseY < 425){
-      fill("yellow")
-      rect(725, 400, 40, 50)
-      cursor(HAND)
-    }
+    // else if(mouseX > 705 && mouseX < 744 && mouseY > 376 && mouseY < 425){
+    //   fill("yellow")
+    //   rect(725, 400, 40, 50)
+    //   cursor(HAND)
+    // }
     else
     {
       cursor(ARROW)
     }
 
-
+    // utilities images
     fill("blue")
     rect(575, 400, 20, 20)
     fill("green")
@@ -355,12 +371,23 @@ function draw() {
     fill("purple")
     triangle(663, 410, 690, 410, 675, 386)
 
-
+    // TODO implement tower placment cool down
+    if(defenderCoolDown == true){
+      fill(25, 200)
+      rect(575, 400, 40, 50)
+      defenderCoolDownTimer--
+      if(defenderCoolDownTimer == 0){
+        defenderCoolDown = false
+      }
+    }
+    if(canPlace){
+      cursor("assets/square_32.png")
+    }
 
     if(gameState == "play"){
       if(soldierCoolDown == true){
         fill(25, 200)
-        rect(575, 400, 40, 50)
+        rect(625, 400, 40, 50)
         soldierCoolDownTimer--
         if(soldierCoolDownTimer == 0){
           soldierCoolDown = false
@@ -386,7 +413,7 @@ function draw() {
             if(attackers[i].collided(soldiers[j].x, soldiers[j].y, soldiers[j].width, 0)){
               console.log("collided")
               attackers[i].mode = "aggresive"
-              soldiers[j].damaged(attackers[j].attack)
+              soldiers[j].damaged(attackers[i].attack)
 
               // if(attackers[j].dead == true || !attackers[j]){
               //   soldiers[i].mode = "passive"
@@ -397,7 +424,8 @@ function draw() {
             }
 
           }
-          // check collision with defending towers
+          
+          // check collision with defending children
           for(j = 0; j < towers.length; j++){
             if(towers[j].children){
               towers[j].children.show()
@@ -474,6 +502,12 @@ function draw() {
         // call methods for living towers
         if(!towers[i].dead){
           towers[i].show()
+          if (towers[i].childrenCooldown == true){
+            towers[i].childrenCooldownTimer --
+            if(towers[i].childrenCooldownTimer == 0){
+              towers[i].childrenCooldown == false
+            }
+          }
     
         }
         // remove dead towers from array
@@ -547,10 +581,27 @@ function mousePressed(){
       }
       
     }
+     
+    // defender tower utility click
+    if(mouseX > 555 && mouseX < 593 && mouseY > 376 && mouseY < 425){
+      // TODO
+      if(defenderCoolDown == false){
+        canPlace = true
+        defenderCoolDown = true
+        defenderCoolDownTimer = 500;
+      }
+
+    }
+
+    if(canPlace){
+      plotDefender()
+      cursor(ARROW)
+    }
 
     if(gameState == "play"){
-      // Utilities
-      if(mouseX > 555 && mouseX < 593 && mouseY > 376 && mouseY < 425){
+      // Utilities clicks during game
+      // soldier
+      if(mouseX > 604 && mouseX < 644 && mouseY > 376 && mouseY < 425){
         if(soldierCoolDown == false){
           spawnDefender()
           soldierCoolDownTimer = 500;
@@ -575,7 +626,7 @@ function mousePressed(){
       // }
     }
 
-    plotDefender()
+    
 
   }
 
@@ -586,24 +637,33 @@ function mousePressed(){
 function startGame(){
     // interval functions for game
     gameState = "play"
-    attackerInterval = setInterval(spawnAttacker, 5000);
+    attackerInterval = setInterval(spawnAttacker, 7500);
     // defenderInterval = setInterval(coolDown, 4000);
     timerInterval = setInterval(updateTimer, 1000);
 
 }
 
 function plotDefender(){
+
   for(i = 0; i< mapOb.placements.length; i++){
     d = dist(mouseX, mouseY, mapOb.placements[i][0], mapOb.placements[i][1])
-    if(d < 20 && mapOb.placements[i][2] == "free" ){
-      towers.push(new Defender(mapOb.placements[i][0], mapOb.placements[i][1], i))
+    if(d < 30 && mapOb.placements[i][2] == "free" ){
+      defenderOb = new Defender(mapOb.placements[i][0], mapOb.placements[i][1], i)
+      towers.push(defenderOb)
       console.log("ploted")
-      
       mapOb.placements[i][2] = "full"
+      canPlace = false
+      // console.log("child spawned")
+      // if defend
+      // if(mapOb.placements[i][2] == "left"){
+      //   child = new
+      // }
+      
     }
     
 
   }
+
 }
 
 // function coolDownHandler(time){
@@ -619,41 +679,49 @@ function spawnAttacker(){
   alien = new Attacker(mapOb.wayPoints[0][0][0],mapOb.wayPoints[0][0][1], "alien")
 
   if(gameTime >= 30){
+    alien.width += 10
     alien.health = 20
-    alien.attack = 0.015
+    alien.attack += 0.05
   }
+  
   attackers.push(alien)
 }
 
-function doDamage(){
+// function doDamage(){
 
-}
+// }
 
 function spawnDefender(){
   soldiers.push(new Attacker(mapOb.wayPoints[1][0][0],mapOb.wayPoints[1][0][1], "soldier"))
   print("solder Pushed")
 }
-
+// Game state handlers
 function resetGame(){
   mapOb = new Map("assets/tdo_background.png")
   // map object with waypoints for attacker navigation
-  mapOb.wayPoints.push([700, 0, "down"],[700, 290, "left"], [310, 280, "up"],[310, 90, "left"],[115, 95, "down"])
+  // mapOb.wayPoints.push([700, 0, "down"],[700, 290, "left"], [310, 280, "up"],[310, 90, "left"],[115, 95, "down"])
   // coordinates for tower placements and direction of spawning children
-  mapOb.placements.push([760, 155, "free", "left"], [568, 225, "free", "down"], [370, 225, "free", "down"], [203, 35, "free", "down"], [205, 200, "free", "right"], [40, 136, "free", "right"], [40, 273, "free", "right"])
+  // mapOb.placements.push([760, 155, "free", "left"], [568, 225, "free", "down"], [370, 225, "free", "down"], [203, 35, "free", "down"], [205, 200, "free", "right"], [40, 136, "free", "right"], [40, 273, "free", "right"])
   towers = [];
   attackers = [];
   soldiers = [];
   towerOb= new DefenderTower();
   towerOb.x = 115, towerOb.y = 380;
   gameTime = 0;
+  soldierCoolDown = false;
+  soldierCoolDownTimer = 500;
   clearInterval(attackerInterval)
   clearInterval(defenderInterval)
   clearInterval(timerInterval)
   gameState ="wait"
+  defenderCoolDown = false;
+  defenderCoolDownTimer = 500;
+  canPlace = false;
+
 }
 
 function reSetup(){
-    attackerInterval = setInterval(spawnAttacker, 5000)
+    attackerInterval = setInterval(spawnAttacker, 7500)
     // defenderInterval = setInterval(coolDown, 4000)
     timerInterval = setInterval(updateTimer, 1000)
 }
